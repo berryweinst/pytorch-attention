@@ -1,5 +1,9 @@
 ```python
 
+1) To generate the frames from the video run: ecog.py
+2) To generate the features.h5 file run from TF_FeatureExtraction:
+python example_feat_extract.py --network resnet_v1_50 --checkpoint ../resnet_v1_50.ckpt --image_path ./frames/ --out_file ./features.h5 --num_classes 1000 --layer_names resnet_v1_50/conv1,resnet_v1_50/block1,resnet_v1_50/block2,resnet_v1_50/block3,resnet_v1_50/block4
+3) To run the trainning and test run: main.py
 
 The Gamma data can be found under this google drive:
 https://drive.google.com/open?id=0B-XlDE1XhfmAR2E4cE45b2NVZk0
