@@ -11,12 +11,12 @@ import gc
 class video_data_exp(object):
 
     def __init__(self, num_of_labels=4,
-                 data_file='/Users/berryweinstein/studies/ECoG/video_data/gamma_data.csv',
-                 drifts_file='/Users/berryweinstein/studies/ECoG/video_data/drifts.csv',
-                 fixations_file='/Users/berryweinstein/studies/ECoG/video_data/fixations.csv',
-                 samples_file='/Users/berryweinstein/studies/ECoG/video_data/samples.csv',
-                 video_file='/Users/berryweinstein/studies/ECoG/video_data/BeFe-1-recording.avi',
-                 hdf5_file='/Users/berryweinstein/tensorflow/TF_FeatureExtraction/features.h5',
+                 data_file='./gamma_data.csv',
+                 drifts_file='./drifts.csv',
+                 fixations_file='./fixations.csv',
+                 samples_file='./samples.csv',
+                 video_file='./BeFe-1-recording.avi',
+                 hdf5_file='./features.h5',
                  cnn_model = 'resnet_v1_50',
                  ecog_interval=250,
                  ecog_offset=100,
