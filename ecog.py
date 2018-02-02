@@ -110,7 +110,7 @@ class video_data_exp(object):
                     # image_out[0:y_end-y_start, 0:x_end-x_start,:] = image[y_start:y_end,x_start:x_end,:]
 
                     im = Image.fromarray(image[y_start:y_end, x_start:x_end, :])
-                    file = "/Users/berryweinstein/studies/ECoG/video_data/frames/frame_" + str(idx) + ".jpg"
+                    file = "./frames/frame_" + str(idx) + ".jpg"
                     im.save(file)
         # print("Loading HDF file of the Resnet50 feature maps")
         # f = h5.File("features.h5", "r")
