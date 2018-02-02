@@ -1,4 +1,11 @@
 ```python
+
+
+The Gamma data can be found under this google drive:
+https://drive.google.com/open?id=0B-XlDE1XhfmAR2E4cE45b2NVZk0
+
+
+
 def attend(
         query, context, value=None,
         score='dot', normalize='softmax',
