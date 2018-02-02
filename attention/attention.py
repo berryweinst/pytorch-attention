@@ -1,7 +1,7 @@
 from torch import FloatTensor
 from torch.autograd import Variable
 from torch.nn.functional import sigmoid, softmax
-
+import torch
 
 def mask3d(value, sizes):
     """Mask entries in value with 0 based on sizes.
@@ -231,7 +231,10 @@ def attend(
     if v is None:
         v = c
 
-    batch_size_q, n_q, dim_q = q.size()
+    if (q == 1):
+        batch_size_q, n_q, dim_q = c.size()
+    else:
+        batch_size_q, n_q, dim_q = q.size()
     batch_size_c, n_c, dim_c = c.size()
     batch_size_v, n_v, dim_v = v.size()
 
@@ -243,7 +246,10 @@ def attend(
 
     # Compute scores
     if score == 'dot':
-        s = dot(q, c)
+        if (q == 1):
+            s = c
+        else:
+            s = dot(q, c)
     elif callable(score):
         s = score(q, c)
     else:
@@ -254,13 +260,13 @@ def attend(
         if context_mask is not None:
             s = Variable(context_mask) + s
         elif context_sizes is not None:
-            mask = s.data.new(batch_size, n_q, n_c)
+            mask = s.data.new(batch_size, n_q, dim_q)
             mask = fill_context_mask(mask, sizes=context_sizes, v_mask=float('-inf'), v_unmask=0)
             s = Variable(mask) + s
 
-        s_flat = s.view(batch_size * n_q, n_c)
-        w_flat = softmax(s_flat)
-        w = w_flat.view(batch_size, n_q, n_c)
+        s_flat = s.view(batch_size * n_q, dim_q)
+        w_flat = softmax(s_flat, dim=1)
+        w = w_flat.view(batch_size, dim_q, n_q)
 
     elif normalize == 'sigmoid' or w == 'identity':
         w = sigmoid(s) if w == 'sigmoid' else s
@@ -276,6 +282,7 @@ def attend(
 
     # Combine
     z = w.bmm(v)
+    z = torch.sum(z, dim=2)
     if return_weight:
         return w, z
     return z
