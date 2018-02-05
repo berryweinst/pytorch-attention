@@ -68,5 +68,13 @@ for idx, t in enumerate(X_test):
     sum_loss += loss.data[0]
 
 
-print('valid loss: {:5.3f}'.format(sum_loss / n_valid))
+print('valid loss: {:5.10f}'.format(sum_loss / n_valid))
 gc.collect()
+
+print ("Pearson correleation (r, p)")
+stats.pearsonr(per_elec_target, per_elec_output)
+
+print("Visual electrode 100 samples. Target in blue. Net output in green")
+plt.plot(per_elec_target[0:100])
+plt.plot(per_elec_output[0:100])
+plt.show()
