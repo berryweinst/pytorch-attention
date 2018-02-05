@@ -282,7 +282,7 @@ def attend(
 
     # Combine
     z = w.bmm(v)
-    z = torch.sum(z, dim=2)
+    z = torch.sum(z, dim=1)
     if return_weight:
         return w, z
     return z
