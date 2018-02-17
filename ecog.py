@@ -1,5 +1,6 @@
 import tensorflow as tf
 import numpy as np
+import matplotlib.pyplot as plt
 import glob
 import pandas as pd
 import cv2
@@ -8,21 +9,24 @@ import h5py as h5
 import pickle
 import gc
 
+
+
 class video_data_exp(object):
 
     def __init__(self, num_of_labels=4,
-                 data_file='./gamma_data.csv',
-                 drifts_file='./drifts.csv',
-                 fixations_file='./fixations.csv',
-                 samples_file='./samples.csv',
-                 video_file='./BeFe-1-recording.avi',
-                 hdf5_file='./features.h5',
+                 data_file='/Users/berryweinstein/studies/ECoG/video_data/gamma_data.csv',
+                 drifts_file='/Users/berryweinstein/studies/ECoG/video_data/drifts.csv',
+                 fixations_file='/Users/berryweinstein/studies/ECoG/video_data/fixations.csv',
+                 samples_file='/Users/berryweinstein/studies/ECoG/video_data/samples.csv',
+                 video_file='/Users/berryweinstein/studies/ECoG/video_data/BeFe-1-recording.avi',
+                 hdf5_file='/Users/berryweinstein/tensorflow/TF_FeatureExtraction/features.h5',
                  cnn_model = 'resnet_v1_50',
-                 ecog_interval=250,
-                 ecog_offset=100,
+                 ecog_interval=350,
+                 ecog_offset=-50,
                  sync_val=14325,
                  cv_image_shape = [720, 960],
-                 image_extract=False):
+                 image_extract=False,
+                 znorm_ecog=False):
         self.data_file = data_file
         self.drifts_file = drifts_file
         self.fixations_file = fixations_file
@@ -38,19 +42,14 @@ class video_data_exp(object):
         self.image_extract = image_extract
         self.cv_image_shape = cv_image_shape
         self.cnn_model = cnn_model
+        self.samples_cnt = 0
+        self.znorm_ecog = znorm_ecog
 
 
     def extract_image_from_video_at_time(self, vidcap, ms_time):
         vidcap.set(cv2.CAP_PROP_POS_MSEC, ms_time)      # Go to the 1 sec. position
         ret,image = vidcap.read()                   # Retrieves the frame at the specified second
         return image
-
-
-
-    def extract_feature_map_data(self, layer):
-        f = h5.File("/Users/berryweinstein/tensorflow/TF_FeatureExtraction/features.h5", "r")
-        data = np.array(f[self.cnn_model][layer])
-        return data
 
 
 
@@ -61,7 +60,11 @@ class video_data_exp(object):
         all_ecog_data = pd.read_csv(self.data_file, sep=',', header=None, float_precision='%.3f', low_memory=False)
         print("Done.")
         all_ecog_data = np.array(all_ecog_data)  ## all that is marked as 'good_e'
+        if (self.znorm_ecog):
+            for e in all_ecog_data:
+                e = np.divide((e - np.mean(e)), np.std(e))
         postData = np.empty([all_ecog_data.shape[0], 0])
+        elec_tl_avg = np.zeros((all_ecog_data.shape[0], sample_size))
 
         drifts = np.array(pd.read_csv(self.drifts_file, sep=',', header=None, low_memory=False))
         fixations = pd.read_csv(self.fixations_file, sep=',', header=0, low_memory=False);
@@ -87,7 +90,7 @@ class video_data_exp(object):
                 frame_time = int(frame_time)
                 image = self.extract_image_from_video_at_time(vidcap, frame_time)
                 image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-                print(image.shape)
+                # print(image.shape)
 
             x_pixel = np.int(samples['B POR X [px]'][tm + 2])
             y_pixel = np.int(samples['B POR Y [px]'][tm + 2])
@@ -98,6 +101,9 @@ class video_data_exp(object):
                 ecog_time = int((fix_start + drifts[0][idx] * 1000 + self.sync_val) * 512 / 1000)
                 all_ecog_seg = all_ecog_data[:, ecog_time - self.ecog_offset:ecog_time + self.ecog_interval]
                 ecog_mean = np.mean(all_ecog_seg, axis=1, dtype=float)
+
+                elec_tl_avg = np.add(elec_tl_avg, all_ecog_seg)
+
                 postData = np.column_stack((postData, ecog_mean))
                 idx2 += 1
                 if (self.image_extract):
@@ -110,12 +116,13 @@ class video_data_exp(object):
                     # image_out[0:y_end-y_start, 0:x_end-x_start,:] = image[y_start:y_end,x_start:x_end,:]
 
                     im = Image.fromarray(image[y_start:y_end, x_start:x_end, :])
-                    file = "./frames/frame_" + str(idx) + ".jpg"
+                    file = "/Users/berryweinstein/studies/ECoG/video_data/frames/frame_" + str(idx) + ".jpg"
                     im.save(file)
         # print("Loading HDF file of the Resnet50 feature maps")
         # f = h5.File("features.h5", "r")
         data_dict = {}
         data_dict['src'] = postData
+        self.samples_cnt = postData.shape[1]
         # data_dict['target'] = {}
         # data_dict['target']['conv1'] = np.array(f[self.cnn_model]['conv1'], dtype=float)
         # data_dict['target']['block1'] = np.array(f[self.cnn_model]['block1'], dtype=float))
@@ -141,12 +148,14 @@ class video_data_exp(object):
         # print ("data_dict_target_block3.p... saved")
         # pickle.dump(data_dict['target']['block4'], open("data_dict_target_block4.p", "wb"))
         # print ("data_dict_target_block4.p... saved")
+        return elec_tl_avg
 
 
 
-exp = video_data_exp()
-exp.extract_images()
+exp = video_data_exp(znorm_ecog=False)
+elec_tl_avg = exp.extract_images()
 gc.collect()
+
 
 
 
